@@ -1,4 +1,7 @@
 cmake_minimum_required (VERSION 3.14)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 #setup our app
 project (VKLearning)
@@ -21,5 +24,5 @@ add_subdirectory(lib/glfw)
 target_link_libraries(VKLearning glfw)
 
 #glm
-add_subdirectory(lib/glm EXCLUDE_FROM_ALL)
+add_subdirectory(lib/glm EXCLUDE_FROM_ALL) #exclude from all as we dont intend to build any of their targets
 target_link_libraries(VKLearning glm)
