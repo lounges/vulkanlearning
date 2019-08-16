@@ -19,3 +19,7 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(lib/glfw)
 target_link_libraries(VKLearning glfw)
+
+#glm
+add_subdirectory(lib/glm EXCLUDE_FROM_ALL)
+target_link_libraries(VKLearning glm)
