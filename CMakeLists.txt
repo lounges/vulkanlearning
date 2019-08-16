@@ -1,7 +1,11 @@
 cmake_minimum_required (VERSION 2.8)
 
-find_package(glfw3 3.3 REQUIRED)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+add_subdirectory(lib/glfw)
 
 project (VKLearning)
 file(GLOB SOURCES "src/*.cpp")
 add_executable(VKLearning ${SOURCES})
+target_link_libraries(VKLearning glfw)
