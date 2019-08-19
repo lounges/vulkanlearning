@@ -68,15 +68,18 @@ private:
         uint32_t glfwExtensionCount = 0;
         auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-        std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+        std::vector<const char*> extensionsToLoad(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+        if(enableValidationLayers)
+            extensionsToLoad.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
         //validate the extensions here
-        for(auto glfwExtension : extensions)
+        for(auto extensionToLoad : extensionsToLoad)
         {
             bool found = false;
             for(auto availableExtension : availableExtensions )
             {
-                if(strcmp(glfwExtension, availableExtension.extensionName) == 0)
+                if(strcmp(extensionToLoad, availableExtension.extensionName) == 0)
                 {
                     found = true;
                     break;
@@ -86,7 +89,11 @@ private:
                 throw std::runtime_error("Missing a required extension..."); //TODO: figure out a string concat to display which one
         }
 
-        return extensions;
+        std::cout << "Continuing with extensions:" << std::endl;
+        for( auto extension : extensionsToLoad)
+            std::cout << "\t" << extension << std::endl;
+
+        return extensionsToLoad;
     }
 
     void createInstance()
