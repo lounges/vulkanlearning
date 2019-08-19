@@ -7,7 +7,7 @@
 #include <cstdlib>
 
 //Ready for this one:
-//https://vulkan-tutorial.com/en/Drawing_a_triangle/Setup/Validation_layers
+//https://vulkan-tutorial.com/en/Drawing_a_triangle/Setup/Physical_devices_and_queue_families
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
@@ -96,16 +96,21 @@ private:
         return VK_FALSE;
     }
 
-    void setupDebugMessanger()
+    void populateDebugUtilsMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
     {
-        if( !enableValidationLayers ) return;
-
-        VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
         createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
         createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         createInfo.pfnUserCallback = debugCallback;
         createInfo.pUserData = nullptr; // Optional
+    }
+
+    void setupDebugMessanger()
+    {
+        if( !enableValidationLayers ) return;
+
+        VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
+        populateDebugUtilsMessengerCreateInfo(createInfo);
 
         if (CreateDebugUtilsMessengerEXT(_instance, &createInfo, nullptr, &_debugMessenger) != VK_SUCCESS)
         {
@@ -216,10 +221,14 @@ private:
         createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
         createInfo.ppEnabledExtensionNames = extensions.data();
 
+        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {};
         if( enableValidationLayers && checkRequiredValidationLayers()) 
         {
             createInfo.enabledLayerCount = static_cast<uint32_t>(requestedValidationLayers.size());
             createInfo.ppEnabledLayerNames = requestedValidationLayers.data();
+
+            populateDebugUtilsMessengerCreateInfo(debugCreateInfo);
+            createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
         }
         
         if( vkCreateInstance(&createInfo, nullptr, &_instance) != VK_SUCCESS )
