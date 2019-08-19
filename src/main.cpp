@@ -8,7 +8,7 @@
 #include <optional>
 
 //Ready for this one:
-//https://vulkan-tutorial.com/en/Drawing_a_triangle/Setup/Logical_device_and_queues
+//https://vulkan-tutorial.com/en/Drawing_a_triangle/Presentation/Window_surface
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
@@ -77,9 +77,11 @@ public:
 
 private:
     GLFWwindow* _window = nullptr;
-    VkDebugUtilsMessengerEXT _debugMessenger;
-    VkInstance _instance;
+    VkDebugUtilsMessengerEXT _debugMessenger = VK_NULL_HANDLE;
+    VkInstance _instance = VK_NULL_HANDLE;
     VkPhysicalDevice _physicalDevice = VK_NULL_HANDLE;
+    VkDevice _device = VK_NULL_HANDLE;
+    VkQueue _graphicsQueue = VK_NULL_HANDLE;
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback (
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -105,9 +107,11 @@ private:
     {
         createInstance();
         setupDebugMessanger();
+        pickPhysicalDevice();
+        createLogicalDevice();
     }
 
-    void pickDevice()
+    void pickPhysicalDevice()
     {
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(_instance, &deviceCount, nullptr);
@@ -128,6 +132,43 @@ private:
 
         if(_physicalDevice == VK_NULL_HANDLE)
             throw std::runtime_error("Unable to find a suitable device.");
+    }
+
+    void createLogicalDevice()
+    {
+        QueueFamilyIndices indices = findQueueFamilies(_physicalDevice);
+
+        VkDeviceQueueCreateInfo queueCreateInfo = {};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
+        queueCreateInfo.queueCount = 1;
+        
+        float queuePriority = 1.f;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+
+        //default for now, to be filled in later
+        VkPhysicalDeviceFeatures deviceFeatures = {};
+
+        VkDeviceCreateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        createInfo.pQueueCreateInfos = &queueCreateInfo;
+        createInfo.queueCreateInfoCount = 1;
+        createInfo.pEnabledFeatures = &deviceFeatures;
+
+        createInfo.enabledExtensionCount = 0;
+
+        if (enableValidationLayers) 
+        {
+            createInfo.enabledLayerCount = static_cast<uint32_t>(requestedValidationLayers.size());
+            createInfo.ppEnabledLayerNames = requestedValidationLayers.data();
+        } 
+        else 
+            createInfo.enabledLayerCount = 0;
+
+        if(vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_device) != VK_SUCCESS) 
+            throw std::runtime_error("Unable to create logical device...");
+
+        vkGetDeviceQueue(_device, indices.graphicsFamily.value(), 0, &_graphicsQueue);
     }
 
     bool isDeviceSuitable(VkPhysicalDevice device)
@@ -317,6 +358,9 @@ private:
 
     void cleanup() 
     {
+        if( _device != VK_NULL_HANDLE )
+            vkDestroyDevice(_device, nullptr);
+
         if( enableValidationLayers )
             DestroyDebugUtilsMessengerEXT(_instance, _debugMessenger, nullptr);
 
