@@ -50,7 +50,7 @@ private:
         createInstance();
     }
 
-    bool checkValidationLayerSupport()
+    bool checkRequiredValidationLayers()
     {
         //see what layers are supported
         uint32_t layerCount = 0;
@@ -63,6 +63,7 @@ private:
         for( auto layer : availableLayers)
             std::cout << "\t" << layer.layerName << std::endl;
 
+        //validate them here
         for(auto requestedLayer : requestedValidationLayers)
         {
             bool foundLayer = false;
@@ -74,17 +75,17 @@ private:
                     foundLayer = true;
                     break; //it is, great check for the next one
                 }
-                    
             }
 
             if(!foundLayer)
-            {
-                std::cerr << "Missing requested validation layer: " << requestedLayer << std::endl;
-                return false;
-            }
+                throw std::runtime_error("Missing a requested validation layer...");
         }
 
-        //if we make it here, all validation layers were found
+        //debug
+        std::cout << "Continuing with validation layers:" << std::endl;
+        for( auto layer : requestedValidationLayers)
+            std::cout << "\t" << layer << std::endl;
+
         return true;
     }
 
@@ -152,15 +153,10 @@ private:
         createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
         createInfo.ppEnabledExtensionNames = extensions.data();
 
-        if( enableValidationLayers ) 
+        if( enableValidationLayers && checkRequiredValidationLayers()) 
         {
-            if(checkValidationLayerSupport())
-            {
-                createInfo.enabledLayerCount = static_cast<uint32_t>(requestedValidationLayers.size());
-                createInfo.ppEnabledLayerNames = requestedValidationLayers.data();
-            }
-            else
-                throw std::runtime_error("Missing a requested validation layer...");
+            createInfo.enabledLayerCount = static_cast<uint32_t>(requestedValidationLayers.size());
+            createInfo.ppEnabledLayerNames = requestedValidationLayers.data();
         }
         
         if( vkCreateInstance(&createInfo, nullptr, &_instance) != VK_SUCCESS )
