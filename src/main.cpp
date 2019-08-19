@@ -5,9 +5,10 @@
 #include <stdexcept>
 #include <functional>
 #include <cstdlib>
+#include <optional>
 
 //Ready for this one:
-//https://vulkan-tutorial.com/en/Drawing_a_triangle/Setup/Physical_devices_and_queue_families
+//https://vulkan-tutorial.com/en/Drawing_a_triangle/Setup/Logical_device_and_queues
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
@@ -55,6 +56,15 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
+struct QueueFamilyIndices 
+{
+    std::optional<uint32_t> graphicsFamily;
+
+    bool isComplete() {
+        return graphicsFamily.has_value();
+    }
+};
+
 class HelloTriangleApplication {
 public:
     void run(const char* title) 
@@ -69,6 +79,19 @@ private:
     GLFWwindow* _window = nullptr;
     VkDebugUtilsMessengerEXT _debugMessenger;
     VkInstance _instance;
+    VkPhysicalDevice _physicalDevice = VK_NULL_HANDLE;
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback (
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT messageType,
+        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData) 
+    {
+
+        std::cerr << "VK_DEBUG: " << pCallbackData->pMessage << std::endl;
+
+        return VK_FALSE;
+    }
 
     void initWindow(int width, int height, const char* title) 
     {
@@ -84,16 +107,66 @@ private:
         setupDebugMessanger();
     }
 
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback (
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageType,
-        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        void* pUserData) 
+    void pickDevice()
     {
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(_instance, &deviceCount, nullptr);
+        if( deviceCount == 0)
+            throw std::runtime_error("Unable to find any devices which support Vulkan.");
 
-        std::cerr << "VK_DEBUG: " << pCallbackData->pMessage << std::endl;
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(_instance, &deviceCount, devices.data());
 
-        return VK_FALSE;
+        for(auto device : devices)
+        {
+            if( isDeviceSuitable(device) )
+            {
+                _physicalDevice = device;
+                break;
+            }
+        }
+
+        if(_physicalDevice == VK_NULL_HANDLE)
+            throw std::runtime_error("Unable to find a suitable device.");
+    }
+
+    bool isDeviceSuitable(VkPhysicalDevice device)
+    {
+        VkPhysicalDeviceProperties deviceProperties = {};
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+        VkPhysicalDeviceFeatures deviceFeatures = {};
+        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+        auto indices = findQueueFamilies(device);
+
+        return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU 
+            && deviceFeatures.geometryShader 
+            && indices.isComplete();
+    }
+
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) 
+    {
+        QueueFamilyIndices indices;
+
+        uint32_t deviceQueueFamilyCount  = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &deviceQueueFamilyCount, nullptr);
+        std::vector<VkQueueFamilyProperties> deviceQueueFamilyProperties(deviceQueueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &deviceQueueFamilyCount, deviceQueueFamilyProperties.data());
+
+        int i = 0;
+        for(const auto& properties : deviceQueueFamilyProperties)
+        {
+            if (properties.queueCount > 0 && properties.queueFlags & VK_QUEUE_GRAPHICS_BIT) 
+                indices.graphicsFamily = i;
+
+            if (indices.isComplete()) 
+                break;
+
+            i++;
+        }
+
+        return indices;
     }
 
     void populateDebugUtilsMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
