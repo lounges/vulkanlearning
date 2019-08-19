@@ -12,7 +12,7 @@
 const int WIDTH = 800;
 const int HEIGHT = 600;
 
-const std::vector<const char*> validationLayers = {
+const std::vector<const char*> requestedValidationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
@@ -50,6 +50,43 @@ private:
         createInstance();
     }
 
+    bool checkValidationLayerSupport()
+    {
+        //see what layers are supported
+        uint32_t layerCount = 0;
+        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+        std::vector<VkLayerProperties> availableLayers(layerCount);
+        vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+        //debug
+        std::cout << "Available Layers:" << std::endl;
+        for( auto layer : availableLayers)
+            std::cout << "\t" << layer.layerName << std::endl;
+
+        for(auto requestedLayer : requestedValidationLayers)
+        {
+            bool foundLayer = false;
+            for(auto availableLayer : availableLayers)
+            {
+                //is this the layer we are looking for?
+                if( strcmp(requestedLayer, availableLayer.layerName) == 0)
+                {
+                    foundLayer = true;
+                    break; //it is, great check for the next one
+                }
+                    
+            }
+
+            if(!foundLayer)
+            {
+                std::cerr << "Missing requested validation layer: " << requestedLayer << std::endl;
+                return false;
+            }
+        }
+
+        //if we make it here, all validation layers were found
+        return true;
+    }
 
     std::vector<const char*> getRequiredExtensions() 
     {
@@ -114,6 +151,17 @@ private:
         auto extensions = getRequiredExtensions();
         createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
         createInfo.ppEnabledExtensionNames = extensions.data();
+
+        if( enableValidationLayers ) 
+        {
+            if(checkValidationLayerSupport())
+            {
+                createInfo.enabledLayerCount = static_cast<uint32_t>(requestedValidationLayers.size());
+                createInfo.ppEnabledLayerNames = requestedValidationLayers.data();
+            }
+            else
+                throw std::runtime_error("Missing a requested validation layer...");
+        }
         
         if( vkCreateInstance(&createInfo, nullptr, &_instance) != VK_SUCCESS )
             throw std::runtime_error("failed to create instance!");
