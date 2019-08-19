@@ -8,6 +8,9 @@ project (VKLearning)
 file(GLOB SOURCES "src/*.cpp")
 add_executable(VKLearning ${SOURCES})
 
+#turn this back on for builds without a console window
+#set_target_properties(VKLearning PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup /SUBSYSTEM:WINDOWS")
+
 #setup vulkan
 #https://cmake.org/cmake/help/v3.7/module/FindVulkan.html
 find_package(Vulkan REQUIRED)
