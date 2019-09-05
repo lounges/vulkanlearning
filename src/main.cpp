@@ -1,6 +1,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <functional>
@@ -10,7 +11,7 @@
 #include <algorithm>
 
 //Ready for this one:
-//https://vulkan-tutorial.com/en/Drawing_a_triangle/Graphics_pipeline_basics/Introduction
+//https://vulkan-tutorial.com/en/Drawing_a_triangle/Graphics_pipeline_basics/Shader_modules
 
 const int WIDTH = 800;
 const int HEIGHT = 600;
@@ -60,6 +61,22 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     {
         func(instance, debugMessenger, pAllocator);
     }
+}
+
+static std::vector<char> readFile(const std::string& filename) {
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("failed to open file!");
+    }
+
+    size_t fileSize = (size_t) file.tellg();
+    std::vector<char> buffer(fileSize);
+
+    file.seekg(0);
+    file.read(buffer.data(), fileSize);
+
+    return buffer;
 }
 
 struct QueueFamilyIndices 
@@ -131,6 +148,13 @@ private:
         createLogicalDevice();
         createSwapChain();
         createImageViews();
+        createGraphicsPipeline();
+    }
+
+    void createGraphicsPipeline() 
+    {
+        //auto vertShaderCode = readFile("resources/shaders/vert.spv");
+        //auto fragShaderCode = readFile("resources/shaders/frag.spv");
     }
 
     void createSurface() 
